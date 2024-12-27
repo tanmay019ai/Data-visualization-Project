@@ -1,70 +1,88 @@
 import React, { useState } from 'react';
 import { LineChart } from 'lucide-react';
+import DataInput from './components/DataInput';
 import FileUpload from './components/FileUpload';
-import DataChart from './components/DataChart';
-import SeriesToggle from './components/SeriesToggle';
-import { DataPoint } from './types/data';
+import Graph from './components/Graph';
+import GraphControls from './components/GraphControls';
+import Footer from './components/Footer';
+import { DataPoint, GraphData, GraphType } from './types';
+import { processData } from './utils/data';
 
 function App() {
-  const [data, setData] = useState<DataPoint[]>([]);
-  const [visibleSeries, setVisibleSeries] = useState({
-    hours: true,
-    stage: true,
-    k: true,
-    log: true,
-    calvin: true,
-  });
+  const [graphData, setGraphData] = useState<GraphData | null>(null);
+  const [graphType, setGraphType] = useState<GraphType>('line');
+  const [zoom, setZoom] = useState(1);
 
-  const handleDataLoaded = (newData: DataPoint[]) => {
-    setData(newData);
+  const handleData = (data: DataPoint[]) => {
+    const processed = processData(data);
+    setGraphData(processed);
   };
 
-  const handleSeriesToggle = (series: string) => {
-    setVisibleSeries(prev => ({
-      ...prev,
-      [series]: !prev[series],
-    }));
+  const handleExport = () => {
+    const canvas = document.querySelector('canvas');
+    if (canvas) {
+      const link = document.createElement('a');
+      link.download = 'graph.jpg';
+      link.href = canvas.toDataURL('image/jpeg', 1.0);
+      link.click();
+    }
   };
+
+  const handleZoomIn = () => setZoom(prev => Math.min(prev * 1.2, 3));
+  const handleZoomOut = () => setZoom(prev => Math.max(prev / 1.2, 0.5));
+  const handleReset = () => setZoom(1);
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <nav className="bg-white shadow-md">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <LineChart className="h-8 w-8 text-blue-500" />
-              <span className="ml-2 text-xl font-semibold text-gray-900">
-                Data Visualization Tool
-              </span>
+              <LineChart className="h-8 w-8 text-blue-600" />
+              <span className="ml-2 text-xl font-bold text-gray-900">Data Visualization Prototype</span>
             </div>
           </div>
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="space-y-8">
-          <FileUpload onDataLoaded={handleDataLoaded} />
-          
-          {data.length > 0 && (
-            <>
-              <SeriesToggle
-                series={visibleSeries}
-                onToggle={handleSeriesToggle}
-              />
-              <DataChart
-                data={data}
-                visibleSeries={visibleSeries}
-              />
-            </>
-          )}
-
-          {data.length === 0 && (
-            <div className="text-center text-gray-500 mt-8">
-              Upload a CSV file to visualize your data
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="space-y-8">
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h2 className="text-lg font-semibold mb-4">Manual Data Input</h2>
+              <DataInput onDataSubmit={handleData} />
             </div>
-          )}
+
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h2 className="text-lg font-semibold mb-4">File Upload</h2>
+              <FileUpload onDataUpload={handleData} />
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {graphData && (
+              <>
+                <GraphControls
+                  onExport={handleExport}
+                  onZoomIn={handleZoomIn}
+                  onZoomOut={handleZoomOut}
+                  onReset={handleReset}
+                  onTypeChange={setGraphType}
+                  currentType={graphType}
+                />
+                <Graph 
+                  data={graphData} 
+                  type={graphType}
+                  showTrendLine={true}
+                  zoom={zoom}
+                />
+              </>
+            )}
+          </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }
