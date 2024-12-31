@@ -1,21 +1,22 @@
 import Papa from 'papaparse';
 import { DataPoint } from '../types';
+import { celsiusToKelvin, calculateInverseKelvin } from './temperature';
 
 export const parseCSV = (file: File): Promise<DataPoint[]> => {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
       header: true,
-      dynamicTyping: true, // Automatically convert numbers
+      dynamicTyping: true,
       skipEmptyLines: true,
       transform: (value) => value.trim(),
       complete: (results) => {
         try {
           const data = results.data
-            .filter((row: any) => row.X != null && row.Y != null && row.Category)
+            .filter((row: any) => row.Hours != null && row.Celsius != null)
             .map((row: any) => ({
-              x: Number(row.X),
-              y: Number(row.Y),
-              category: String(row.Category),
+              hours: Number(row.Hours),
+              celsius: Number(row.Celsius),
+              category: 'Temperature',
             }));
           resolve(data);
         } catch (error) {
@@ -28,20 +29,14 @@ export const parseCSV = (file: File): Promise<DataPoint[]> => {
 };
 
 export const processData = (data: DataPoint[]) => {
-  const categories = [...new Set(data.map(point => point.category))];
-  const xValues = [...new Set(data.map(point => point.x))].sort((a, b) => a - b);
+  const xValues = [...new Set(data.map(point => point.hours))].sort((a, b) => a - b);
   
-  const datasets = categories.map(category => {
-    const categoryData = data
-      .filter(point => point.category === category)
-      .sort((a, b) => a.x - b.x)
-      .map(point => point.y);
-
-    return {
-      label: category,
-      data: categoryData,
-    };
-  });
+  const datasets = [{
+    label: '1/Temperature (K⁻¹)',
+    data: data
+      .sort((a, b) => a.hours - b.hours)
+      .map(point => calculateInverseKelvin(celsiusToKelvin(point.celsius))),
+  }];
 
   return {
     labels: xValues,

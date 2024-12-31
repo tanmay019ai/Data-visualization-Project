@@ -1,6 +1,6 @@
 export interface DataPoint {
-  x: number;
-  y: number;
+  hours: number;
+  celsius: number;
   category: string;
 }
 

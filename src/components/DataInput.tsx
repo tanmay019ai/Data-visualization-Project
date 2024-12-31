@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, Trash2 } from 'lucide-react';
 import { DataPoint } from '../types';
+import { celsiusToKelvin, calculateInverseKelvin } from '../utils/temperature';
 
 interface DataInputProps {
   onDataSubmit: (data: DataPoint[]) => void;
@@ -8,11 +9,18 @@ interface DataInputProps {
 
 export default function DataInput({ onDataSubmit }: DataInputProps) {
   const [points, setPoints] = useState<DataPoint[]>([
-    { x: 0, y: 0, category: 'Hour' },
+    { hours: 0, celsius: 0, category: 'Temperature' },
   ]);
 
   const addPoint = () => {
-    setPoints([...points, { x: 0, y: 0, category: 'Hour' }]);
+    setPoints([...points, { hours: 0, celsius: 0, category: 'Temperature' }]);
+  };
+
+  const removePoint = (index: number) => {
+    if (points.length > 1) {
+      const newPoints = points.filter((_, i) => i !== index);
+      setPoints(newPoints);
+    }
   };
 
   const updatePoint = (index: number, field: keyof DataPoint, value: string | number) => {
@@ -33,28 +41,36 @@ export default function DataInput({ onDataSubmit }: DataInputProps) {
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-2">
         {points.map((point, index) => (
-          <div key={index} className="flex gap-4">
-            <input
-              type="number"
-              value={point.x}
-              onChange={(e) => updatePoint(index, 'x', e.target.value)}
-              placeholder="X value"
-              className="w-24 px-3 py-2 border rounded-md"
-            />
-            <input
-              type="number"
-              value={point.y}
-              onChange={(e) => updatePoint(index, 'y', e.target.value)}
-              placeholder="Y value"
-              className="w-24 px-3 py-2 border rounded-md"
-            />
-            <input
-              type="text"
-              value={point.category}
-              onChange={(e) => updatePoint(index, 'category', e.target.value)}
-              placeholder="Category"
-              className="w-32 px-3 py-2 border rounded-md"
-            />
+          <div key={index} className="flex gap-4 items-end">
+            <div className="flex flex-col">
+              <label className="text-sm text-gray-600">Hours</label>
+              <input
+                type="number"
+                value={point.hours}
+                onChange={(e) => updatePoint(index, 'hours', e.target.value)}
+                placeholder="Hours"
+                className="w-24 px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div className="flex flex-col">
+              <label className="text-sm text-gray-600">Temperature (°C)</label>
+              <input
+                type="number"
+                value={point.celsius}
+                onChange={(e) => updatePoint(index, 'celsius', e.target.value)}
+                placeholder="Celsius"
+                className="w-24 px-3 py-2 border rounded-md"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => removePoint(index)}
+              className="p-2 text-red-600 hover:bg-red-50 rounded-md"
+              disabled={points.length === 1}
+              title="Remove Point"
+            >
+              <Trash2 size={20} />
+            </button>
           </div>
         ))}
       </div>

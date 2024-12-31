@@ -18,7 +18,7 @@ export default function FileUpload({ onDataUpload }: FileUploadProps) {
       setError('Please upload a valid CSV file');
       return false;
     }
-    if (file.size > 5 * 1024 * 1024) { // 5MB limit
+    if (file.size > 5 * 1024 * 1024) {
       setError('File size should be less than 5MB');
       return false;
     }
@@ -31,7 +31,6 @@ export default function FileUpload({ onDataUpload }: FileUploadProps) {
     setSuccess(null);
 
     if (!file) return;
-
     if (!validateCSV(file)) return;
 
     try {
@@ -42,31 +41,21 @@ export default function FileUpload({ onDataUpload }: FileUploadProps) {
         return;
       }
 
-      if (!data.every(point => 
-        typeof point.x === 'number' && 
-        typeof point.y === 'number' && 
-        typeof point.category === 'string'
-      )) {
-        setError('Invalid data format. CSV must have X, Y, and Category columns with proper values');
-        return;
-      }
-
       onDataUpload(data);
-      setSuccess(`Successfully loaded ${data.length} data points`);
+      setSuccess(`Loaded ${data.length} points`);
       
-      // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
     } catch (error) {
       console.error('Error parsing file:', error);
-      setError('Error parsing file. Please ensure it follows the correct format: X, Y, Category');
+      setError('Error parsing file. Please ensure it follows the format: Hours, Celsius');
     }
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors">
+    <div className="space-y-2">
+      <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 transition-colors">
         <input
           ref={fileInputRef}
           type="file"
@@ -75,37 +64,32 @@ export default function FileUpload({ onDataUpload }: FileUploadProps) {
           className="hidden"
         />
         
-        <Upload size={48} className="text-gray-400 mb-4" />
+        <Upload size={24} className="text-gray-400 mb-2" />
         
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="px-4 py-2 text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+          className="px-3 py-1 text-sm text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 transition-colors"
         >
-          Upload CSV File
+          Upload CSV
         </button>
         
-        <div className="mt-4 text-sm text-gray-500">
-          <p>Upload a CSV file with columns:</p>
-          <code className="block mt-1 p-2 bg-gray-50 rounded">
-            X,Y,Category
-            <br />
-            120,5000,Hour
-            <br />
-            140,4500,Hour
+        <div className="mt-2 text-xs text-gray-500">
+          <code className="block p-1 bg-gray-50 rounded">
+            Hours,Celsius
           </code>
         </div>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 text-red-700 bg-red-50 rounded-md">
-          <AlertCircle size={20} />
+        <div className="flex items-center gap-1 p-2 text-sm text-red-700 bg-red-50 rounded-md">
+          <AlertCircle size={16} />
           <p>{error}</p>
         </div>
       )}
 
       {success && (
-        <div className="flex items-center gap-2 p-3 text-green-700 bg-green-50 rounded-md">
-          <FileCheck size={20} />
+        <div className="flex items-center gap-1 p-2 text-sm text-green-700 bg-green-50 rounded-md">
+          <FileCheck size={16} />
           <p>{success}</p>
         </div>
       )}

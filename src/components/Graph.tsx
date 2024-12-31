@@ -38,8 +38,7 @@ interface GraphProps {
 export default function Graph({ data, type, showTrendLine = true, zoom }: GraphProps) {
   const chartRef = useRef<ChartJS>(null);
   const colors = generateColors(data.datasets.length);
-  
-  // Update chart when zoom changes
+
   useEffect(() => {
     if (chartRef.current) {
       const chart = chartRef.current;
@@ -49,19 +48,16 @@ export default function Graph({ data, type, showTrendLine = true, zoom }: GraphP
       const center = (originalMax + originalMin) / 2;
       const newRange = range / zoom;
       
-      const newMin = center - (newRange / 2);
-      const newMax = center + (newRange / 2);
-      
       chart.options.scales = {
         ...chart.options.scales,
         x: {
-          ...chart.options.scales.x,
-          min: newMin,
-          max: newMax
+          ...chart.options.scales?.x,
+          min: center - (newRange / 2),
+          max: center + (newRange / 2)
         }
       };
       
-      chart.update('none');
+      chart.update();
     }
   }, [zoom, data.labels]);
 
@@ -101,6 +97,7 @@ export default function Graph({ data, type, showTrendLine = true, zoom }: GraphP
 
   const options = {
     responsive: true,
+    maintainAspectRatio: false,
     interaction: {
       mode: 'index' as const,
       intersect: false,
@@ -126,27 +123,25 @@ export default function Graph({ data, type, showTrendLine = true, zoom }: GraphP
     scales: {
       y: {
         beginAtZero: true,
+        title: {
+          display: true,
+          text: '1/Temperature (K⁻¹)',
+        }
       },
       x: {
         type: 'linear' as const,
+        title: {
+          display: true,
+          text: 'Time (hours)',
+        }
       }
     },
-  };
-
-  const exportChart = () => {
-    if (chartRef.current) {
-      const url = chartRef.current.toBase64Image();
-      const link = document.createElement('a');
-      link.download = 'graph.jpg';
-      link.href = url;
-      link.click();
-    }
   };
 
   const ChartComponent = type === 'line' ? Line : type === 'bar' ? Bar : Scatter;
 
   return (
-    <div className="w-full h-[400px] bg-white p-4 rounded-lg shadow-md">
+    <div className="w-full h-full bg-white p-4 rounded-lg shadow-md">
       <ChartComponent ref={chartRef} data={chartData} options={options} />
     </div>
   );
