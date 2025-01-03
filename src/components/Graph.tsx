@@ -12,6 +12,7 @@ import {
   ScatterController,
 } from 'chart.js';
 import { Line, Bar, Scatter } from 'react-chartjs-2';
+import { Download } from 'lucide-react';
 import { GraphData, GraphType } from '../types';
 import { generateColors } from '../utils/colors';
 import { calculateRegressionLine } from '../utils/regression';
@@ -38,6 +39,26 @@ interface GraphProps {
 export default function Graph({ data, type, showTrendLine = true, zoom }: GraphProps) {
   const chartRef = useRef<ChartJS>(null);
   const colors = generateColors(data.datasets.length);
+  const [activeTab, setActiveTab] = React.useState<'chart' | 'table'>('chart');
+
+  const downloadCSV = () => {
+    const headers = ['Hours', '1/Temperature (K⁻¹)'];
+    const rows = data.labels.map((hour, index) => [
+      hour,
+      data.datasets[0].data[index]
+    ]);
+    
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'temperature_data.csv';
+    link.click();
+  };
 
   useEffect(() => {
     if (chartRef.current) {
@@ -117,6 +138,9 @@ export default function Graph({ data, type, showTrendLine = true, zoom }: GraphP
             const value = context.parsed.y;
             return `${label}: ${value}`;
           },
+          title: (tooltipItems: any[]) => {
+            return `${tooltipItems[0].parsed.x} hours`;
+          }
         },
       },
     },
@@ -142,7 +166,75 @@ export default function Graph({ data, type, showTrendLine = true, zoom }: GraphP
 
   return (
     <div className="w-full h-full bg-white p-4 rounded-lg shadow-md">
-      <ChartComponent ref={chartRef} data={chartData} options={options} />
+      <div className="mb-4 border-b border-gray-200">
+        <div className="flex justify-between items-center">
+          <div className="flex">
+            <button
+              className={`py-2 px-4 border-b-2 ${
+                activeTab === 'chart'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => setActiveTab('chart')}
+            >
+              Graph
+            </button>
+            <button
+              className={`py-2 px-4 border-b-2 ${
+                activeTab === 'table'
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+              onClick={() => setActiveTab('table')}
+            >
+              Data Table
+            </button>
+          </div>
+          {activeTab === 'table' && (
+            <button
+              onClick={downloadCSV}
+              className="flex items-center gap-2 px-3 py-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+              title="Download CSV"
+            >
+              <Download size={18} />
+              <span>Download CSV</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {activeTab === 'chart' ? (
+        <div className="h-[calc(100%-3rem)]">
+          <ChartComponent ref={chartRef} data={chartData} options={options} />
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Time (hours)
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  1/Temperature (K⁻¹)
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {data.labels.map((hour, index) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {hour}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {data.datasets[0].data[index].toFixed(6)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
